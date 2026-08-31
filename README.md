@@ -23,6 +23,7 @@ The table below lists all available environments:
 |            | [Deeprobotics Lite3](https://www.deeprobotics.cn/robot/index/product1.html) | RobotLab-Isaac-Velocity-Rough-Deeprobotics-Lite3-v0 | <img src="./docs/imgs/deeprobotics_lite3.png" alt="Lite3" width="75"> |
 |            | [Zsibot ZSL1](https://www.zsibot.com/zsl1) | RobotLab-Isaac-Velocity-Rough-Zsibot-ZSL1-v0 | <img src="./docs/imgs/zsibot_zsl1.png" alt="zsibot_zsl1" width="75"> |
 |            | [Magiclab MagicDog](https://www.magiclab.top/dog) | RobotLab-Isaac-Velocity-Rough-MagicLab-Dog-v0 | <img src="./docs/imgs/magiclab_magicdog.png" alt="magiclab_magicdog" width="75"> |
+| **Mobile Manipulator** | [Go2 + ARX5 (UMI-on-Legs)](https://github.com/real-stanford/umi-on-legs) | RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-v0 | — |
 | **Wheeled** | [Unitree Go2W](https://www.unitree.com/go2-w) | RobotLab-Isaac-Velocity-Rough-Unitree-Go2W-v0 | <img src="./docs/imgs/unitree_go2w.png" alt="unitree_go2w" width="75"> |
 |            | [Unitree B2W](https://www.unitree.com/b2-w) | RobotLab-Isaac-Velocity-Rough-Unitree-B2W-v0 | <img src="./docs/imgs/unitree_b2w.png" alt="unitree_b2w" width="75"> |
 |            | [Deeprobotics M20](https://www.deeprobotics.cn/robot/index/lynx.html) | RobotLab-Isaac-Velocity-Rough-Deeprobotics-M20-v0 | <img src="./docs/imgs/deeprobotics_m20.png" alt="deeprobotics_m20" width="75"> |
@@ -212,6 +213,19 @@ python scripts/reinforcement_learning/cusrl/train.py --task=<ENV_NAME> --headles
 # Play
 python scripts/reinforcement_learning/cusrl/play.py --task=<ENV_NAME>
 ```
+
+UMI-on-Legs whole-body control for Go2 + ARX5:
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task=RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-v0 \
+  --headless \
+  env.commands.ee_trajectory.trajectory_file=/absolute/path/to/tossing.pkl
+```
+
+See [the UMI-on-Legs reproduction guide](docs/umi_on_legs.md) for data download,
+environment details, smoke testing, and the fidelity boundary of the Isaac Gym
+to Isaac Lab port.
 
 BeyondMimic for Unitree G1:
 

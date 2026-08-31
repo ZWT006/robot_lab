@@ -1,0 +1,78 @@
+# UMI-on-Legs whole-body controller
+
+This task ports the manipulation-centric whole-body controller from
+[real-stanford/umi-on-legs](https://github.com/real-stanford/umi-on-legs) to this
+repository's Isaac Lab 2.3.2 and RSL-RL stack. It trains the 18-DoF Go2 + ARX5
+controller from the paper; it does not train the separate image-conditioned
+diffusion policy.
+
+## What is reproduced
+
+- Calibrated Go2 + ARX5 URDF and Finray end effector from the open-source release.
+- 50 Hz joint-position policy over 12 leg and 6 arm joints, with 200 Hz physics.
+- World-frame end-effector trajectory tracking.
+- Relative target observations at `[-60, -40, -20, 0, 20, 40, 60, 1000]` ms,
+  encoded as 3D position and 6D rotation.
+- Asymmetric actor-critic observations: the 132D deployable policy input and
+  261D critic input with randomized physics properties used only during training.
+- Unified position/orientation reward and the released error-based sigma curriculum.
+- Joint-limit, acceleration, torque, root-height, collision, action-rate,
+  body/end-effector alignment, even-foot-load, and feet-under-hips regularization.
+- Motor delay, pose delay, pushes, pose jumps, friction, mass, center-of-mass,
+  joint damping/friction, and PD-gain randomization.
+
+The task uses procedural trajectories when no trajectory file is supplied. This
+mode is intended for smoke tests only; use the released UMI trajectories for
+paper-level experiments.
+
+## Get the released trajectories
+
+The authors publish the preprocessed controller data from their
+[starter guide](https://github.com/real-stanford/umi-on-legs/blob/main/mani-centric-wbc/docs/starter.md):
+
+```bash
+mkdir -p data/umi_on_legs
+curl -L http://real.stanford.edu/umi-on-legs/wbc/data.zip -o /tmp/umi_on_legs_data.zip
+bsdtar -xf /tmp/umi_on_legs_data.zip -C data/umi_on_legs
+```
+
+The command loader expects the upstream pickle format: a list of episode
+dictionaries with `(T, 3)` arrays named `ee_pos` and `ee_axis_angle`, sampled at
+200 Hz. Only load pickle files from a trusted source.
+
+## Verify and train
+
+Run a procedural-trajectory smoke test first:
+
+```bash
+python scripts/tools/zero_agent.py \
+  --task=RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-v0 \
+  --num_envs=1 --headless
+```
+
+Train on the released tossing trajectories:
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task=RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-v0 \
+  --headless \
+  env.commands.ee_trajectory.trajectory_file="$(pwd)/data/umi_on_legs/data/tossing.pkl"
+```
+
+If the archive extracts without the extra `data/` directory, remove that segment
+from the path. The same override accepts the pushing, cup-rearrangement, or a
+custom pickle file in the same format.
+
+The paper reports 4,000 PPO iterations for its simulation comparisons; that is
+the default here. The released source uses 32 learning epochs per batch and notes
+that safety fine-tuning benefits from longer rollouts (for example 128 steps per
+environment) and a sweep over the action-rate penalty.
+
+## Important fidelity boundary
+
+Isaac Gym and Isaac Lab/PhysX do not produce bit-identical dynamics. This port
+reproduces the task definition and released robot parameters, but existing
+Isaac-Gym checkpoints are not directly loadable. Train a fresh RSL-RL checkpoint
+in this environment. Real-robot deployment, iPhone odometry, and the diffusion
+policy remain in the upstream repository and require hardware-specific latency
+and safety validation.
