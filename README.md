@@ -12,6 +12,11 @@
 
 **robot_lab** is a RL extension library for robots, based on IsaacLab. It allows you to develop in an isolated environment, outside of the core Isaac Lab repository.
 
+> [!IMPORTANT]
+> ReLIC-derived Spot + Arm code and assets are separately licensed for
+> non-commercial research use. See
+> [`source/robot_lab/robot_lab/third_party/relic/LICENSE`](source/robot_lab/robot_lab/third_party/relic/LICENSE).
+
 The table below lists all available environments:
 
 | Category   | Robot Model         | Environment Name (ID)                                      | Screenshot |
@@ -24,6 +29,7 @@ The table below lists all available environments:
 |            | [Zsibot ZSL1](https://www.zsibot.com/zsl1) | RobotLab-Isaac-Velocity-Rough-Zsibot-ZSL1-v0 | <img src="./docs/imgs/zsibot_zsl1.png" alt="zsibot_zsl1" width="75"> |
 |            | [Magiclab MagicDog](https://www.magiclab.top/dog) | RobotLab-Isaac-Velocity-Rough-MagicLab-Dog-v0 | <img src="./docs/imgs/magiclab_magicdog.png" alt="magiclab_magicdog" width="75"> |
 | **Mobile Manipulator** | [Go2 + ARX5 (UMI-on-Legs)](https://github.com/real-stanford/umi-on-legs) | RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-v0 | — |
+|            | [Spot + Arm (ReLIC)](https://github.com/robotics-ai-dev/relic) | RobotLab-Isaac-ReLIC-Spot-Interlimb-Phase-1-v0 | — |
 | **Wheeled** | [Unitree Go2W](https://www.unitree.com/go2-w) | RobotLab-Isaac-Velocity-Rough-Unitree-Go2W-v0 | <img src="./docs/imgs/unitree_go2w.png" alt="unitree_go2w" width="75"> |
 |            | [Unitree B2W](https://www.unitree.com/b2-w) | RobotLab-Isaac-Velocity-Rough-Unitree-B2W-v0 | <img src="./docs/imgs/unitree_b2w.png" alt="unitree_b2w" width="75"> |
 |            | [Deeprobotics M20](https://www.deeprobotics.cn/robot/index/lynx.html) | RobotLab-Isaac-Velocity-Rough-Deeprobotics-M20-v0 | <img src="./docs/imgs/deeprobotics_m20.png" alt="deeprobotics_m20" width="75"> |
@@ -51,6 +57,7 @@ The table below lists all available environments:
 | robot_lab Version | Isaac Lab Version             | Isaac Sim Version       |
 |------------------ | ----------------------------- | ----------------------- |
 | `main` branch     | `main` branch                 | Isaac Sim 4.5 / 5.0     |
+| `loco-mani`       | `v2.2.1`-compatible local tree | Isaac Sim 5.0           |
 | `v2.2.0`          | `v2.2.0`                      | Isaac Sim 4.5 / 5.0     |
 | `v2.1.1`          | `v2.1.1`                      | Isaac Sim 4.5           |
 | `v1.1`            | `v1.4.1`                      | Isaac Sim 4.2           |
@@ -226,6 +233,18 @@ python scripts/reinforcement_learning/rsl_rl/train.py \
 See [the UMI-on-Legs reproduction guide](docs/umi_on_legs.md) for data download,
 environment details, smoke testing, and the fidelity boundary of the Isaac Gym
 to Isaac Lab port.
+
+ReLIC interlimb loco-manipulation for Spot + Arm:
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task=RobotLab-Isaac-ReLIC-Spot-Interlimb-Phase-1-v0 \
+  --headless \
+  --run_name=phase_1
+```
+
+See [the ReLIC Spot interlimb guide](docs/relic_spot_interlimb.md) for the
+Phase 1–4 checkpoint curriculum, CPU play command, and license restrictions.
 
 BeyondMimic for Unitree G1:
 

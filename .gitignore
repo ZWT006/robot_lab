@@ -37,3 +37,6 @@ _build
 
 # LSP
 pyrightconfig.json
+
+# Downloaded UMI-on-Legs trajectories (large, locally supplied datasets)
+source/robot_lab/data/umi_on_legs/*.pkl

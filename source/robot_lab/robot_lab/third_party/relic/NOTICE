@@ -1,0 +1,17 @@
+ReLIC source-code notice
+========================
+
+The ReLIC-derived modules in this repository retain the original Robotics and
+AI Institute copyright headers and are marked as modified for robot_lab and
+Isaac Lab 2.2 compatibility.
+
+Covered paths:
+
+- robot_lab/assets/relic_spot.py
+- robot_lab/assets/relic_spot_constants.py
+- robot_lab/actuators/relic_spot.py
+- robot_lab/tasks/manager_based/loco_manipulation/relic_interlimb/
+
+They are governed by the RAI Institute Research License in LICENSE, including
+its non-commercial-research restriction. They are excluded from robot_lab's
+automatic Apache-2.0 header insertion hook.

@@ -1,0 +1,14 @@
+ReLIC Spot + Arm asset notice
+============================
+
+Source: https://github.com/robotics-ai-dev/relic
+Upstream project: ReLIC, Versatile Loco-Manipulation through Flexible Interlimb Coordination
+Copyright: Robotics and AI Institute LLC dba RAI Institute
+
+This directory contains a modified redistribution of the ReLIC Spot + Arm URDF
+and mesh assets. The files were relocated for robot_lab's asset layout and the
+Python configuration was adapted for Isaac Lab 2.2. The asset geometry itself is
+otherwise unchanged.
+
+These files are governed by LICENSE.relic in this directory. In particular, the
+RAI Institute Research License limits use to non-commercial research purposes.
