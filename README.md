@@ -224,15 +224,26 @@ python scripts/reinforcement_learning/cusrl/play.py --task=<ENV_NAME>
 UMI-on-Legs whole-body control for Go2 + ARX5:
 
 ```bash
+# Train one policy for the pushing trajectory
 python scripts/reinforcement_learning/rsl_rl/train.py \
   --task=RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-v0 \
   --headless \
-  env.commands.ee_trajectory.trajectory_file=/absolute/path/to/tossing.pkl
+  --run_name=pushing \
+  env.commands.ee_trajectory.trajectory_file="$(pwd)/source/robot_lab/data/umi_on_legs/pushing.pkl"
+
+# Play the completed local pushing checkpoint in an interactive window
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task=RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-Play-v0 \
+  --num_envs=1 \
+  --device=cpu \
+  --checkpoint="$(pwd)/logs/rsl_rl/umi_on_legs_go2_arx5/2026-09-01_16-10-11_pushing/model_3999.pt" \
+  env.commands.ee_trajectory.trajectory_file="$(pwd)/source/robot_lab/data/umi_on_legs/pushing.pkl"
 ```
 
 See [the UMI-on-Legs reproduction guide](docs/umi_on_legs.md) for data download,
-environment details, smoke testing, and the fidelity boundary of the Isaac Gym
-to Isaac Lab port.
+the other two trajectory-specific training commands, checkpoint paths,
+CPU/GPU Play, smoke testing, and the fidelity boundary of the Isaac Gym to
+Isaac Lab port.
 
 ReLIC interlimb loco-manipulation for Spot + Arm:
 
@@ -241,6 +252,12 @@ python scripts/reinforcement_learning/rsl_rl/train.py \
   --task=RobotLab-Isaac-ReLIC-Spot-Interlimb-Phase-1-v0 \
   --headless \
   --run_name=phase_1
+
+# After completing Phases 1-4, play the final checkpoint
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task=RobotLab-Isaac-ReLIC-Spot-Interlimb-Play-v0 \
+  --num_envs=1 \
+  --checkpoint="$(pwd)/logs/rsl_rl/spot_interlimb/<run-directory>/model_<iteration>.pt"
 ```
 
 See [the ReLIC Spot interlimb guide](docs/relic_spot_interlimb.md) for the

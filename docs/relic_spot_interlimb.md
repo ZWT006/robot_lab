@@ -24,6 +24,10 @@ python scripts/reinforcement_learning/rsl_rl/train.py \
   --run_name=phase_1
 ```
 
+The default scene uses 4,096 environments and CUDA. Use `--num_envs=<count>`
+to reduce GPU memory use. Checkpoints are written under
+`logs/rsl_rl/spot_interlimb/<timestamp>_phase_1/`.
+
 Continue each later phase from the preceding phase's RSL-RL checkpoint:
 
 ```bash
@@ -40,6 +44,20 @@ Repeat with `Phase-3-v0` and `Phase-4-v0`, always resuming from the preceding
 phase. All phases use `logs/rsl_rl/spot_interlimb`, so the default robot_lab
 checkpoint discovery works without a ReLIC-specific training script.
 
+For example, if Phase 1 produced the directory
+`2026-09-01_20-00-00_phase_1` and checkpoint `model_10000.pt`, start Phase 2
+with:
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task=RobotLab-Isaac-ReLIC-Spot-Interlimb-Phase-2-v0 \
+  --headless \
+  --resume \
+  --load_run=2026-09-01_20-00-00_phase_1 \
+  --checkpoint=model_10000.pt \
+  --run_name=phase_2
+```
+
 ## Play and export
 
 Use the ordinary robot_lab player with the final RSL-RL checkpoint. CPU policy
@@ -53,6 +71,10 @@ python scripts/reinforcement_learning/rsl_rl/play.py \
   --device=cpu \
   --checkpoint="$(pwd)/logs/rsl_rl/spot_interlimb/<run-directory>/model_<iteration>.pt"
 ```
+
+Do not pass `--headless` when an interactive window is required. Use
+`--device=cuda:0` (or omit `--device`) for GPU simulation. To verify a checkpoint
+without visualization, add `--headless --max_steps=200`.
 
 On load, the standard player exports `exported/policy.pt` and
 `exported/policy.onnx` beside the checkpoint. The upstream ReLIC exported policy
