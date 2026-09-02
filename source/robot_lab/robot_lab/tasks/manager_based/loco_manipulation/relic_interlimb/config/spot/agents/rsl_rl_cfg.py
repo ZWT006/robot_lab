@@ -14,9 +14,9 @@ class SpotInterlimbPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     """Configuration for the PPO runner."""
 
     num_steps_per_env = 24
-    max_iterations = 10000
-    save_interval = 200
-    experiment_name = "spot_interlimb"
+    max_iterations = 10001
+    save_interval = 500
+    experiment_name = "spot_arm"
     obs_groups = {"policy": ["policy"], "critic": ["policy"]}
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,

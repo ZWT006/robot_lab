@@ -69,7 +69,7 @@ python scripts/reinforcement_learning/rsl_rl/play.py \
   --task=RobotLab-Isaac-ReLIC-Spot-Interlimb-Play-v0 \
   --num_envs=1 \
   --device=cpu \
-  --checkpoint="$(pwd)/logs/rsl_rl/spot_interlimb/<run-directory>/model_<iteration>.pt"
+  --checkpoint="$(pwd)/logs/rsl_rl/spot_arm/2026-09-01_21-10-18_phase_1/model_10000.pt"
 ```
 
 Do not pass `--headless` when an interactive window is required. Use

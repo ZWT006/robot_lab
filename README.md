@@ -1,7 +1,7 @@
 # robot_lab
 
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-5.0.0-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
-[![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.2.0-silver)](https://isaac-sim.github.io/IsaacLab)
+[![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.2.1-silver)](https://isaac-sim.github.io/IsaacLab)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://docs.python.org/3/whatsnew/3.11.html)
 [![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/22.04/)
 [![Windows platform](https://img.shields.io/badge/platform-windows--64-orange.svg)](https://www.microsoft.com/en-us/)
@@ -54,13 +54,19 @@ The table below lists all available environments:
 
 ## Version Dependency
 
-| robot_lab Version | Isaac Lab Version             | Isaac Sim Version       |
-|------------------ | ----------------------------- | ----------------------- |
-| `main` branch     | `main` branch                 | Isaac Sim 4.5 / 5.0     |
-| `loco-mani`       | `v2.2.1`-compatible local tree | Isaac Sim 5.0           |
-| `v2.2.0`          | `v2.2.0`                      | Isaac Sim 4.5 / 5.0     |
-| `v2.1.1`          | `v2.1.1`                      | Isaac Sim 4.5           |
-| `v1.1`            | `v1.4.1`                      | Isaac Sim 4.2           |
+> [!IMPORTANT]
+> The current `loco-mani` branch is developed and tested with **Isaac Sim
+> 5.0.0** (`isaacsim==5.0.0.0`) and an **Isaac Lab 2.2.1-compatible** source
+> checkout (`IsaacLab/VERSION` is `2.2.1`). Isaac Lab 2.2.2 has not been
+> validated on this branch and should be treated as a separate migration.
+
+| robot_lab Version | Isaac Lab Version                | Isaac Sim Version |
+|-------------------|----------------------------------|-------------------|
+| `loco-mani`       | `v2.2.1`-compatible source tree | `5.0.0`           |
+| `main` branch     | `main` branch                    | `4.5` / `5.0`     |
+| `v2.2.0`          | `v2.2.0`                         | `4.5` / `5.0`     |
+| `v2.1.1`          | `v2.1.1`                         | `4.5`             |
+| `v1.1`            | `v1.4.1`                         | `4.2`             |
 
 ## Installation
 

@@ -112,7 +112,7 @@ python scripts/reinforcement_learning/rsl_rl/play.py \
   --task=RobotLab-Isaac-UMI-On-Legs-Go2-ARX5-Play-v0 \
   --num_envs=1 \
   --device=cpu \
-  --checkpoint="$(pwd)/logs/rsl_rl/umi_on_legs_go2_arx5/2026-09-01_16-10-11_pushing/model_3999.pt" \
+  --checkpoint="$(pwd)/logs/rsl_rl/go2_arx5/2026-09-01_16-10-11_pushing/model_3999.pt" \
   env.commands.ee_trajectory.trajectory_file="$(pwd)/source/robot_lab/data/umi_on_legs/pushing.pkl"
 ```
 

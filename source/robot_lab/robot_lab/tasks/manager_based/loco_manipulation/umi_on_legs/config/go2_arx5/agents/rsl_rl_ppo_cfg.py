@@ -11,8 +11,8 @@ class UmiOnLegsPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     """PPO settings matching the released UMI-on-Legs whole-body controller."""
 
     num_steps_per_env = 24
-    max_iterations = 4000
-    save_interval = 100
+    max_iterations = 4001
+    save_interval = 200
     experiment_name = "go2_arx5"
     obs_groups = {"policy": ["policy"], "critic": ["critic"]}
     policy = RslRlPpoActorCriticCfg(
