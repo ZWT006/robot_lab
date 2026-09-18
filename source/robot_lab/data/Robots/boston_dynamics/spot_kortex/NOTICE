@@ -1,0 +1,25 @@
+The Spot + Kortex URDF and mesh files in this directory are derived from the
+following local ROS packages:
+
+  CHAMP Spot description
+  https://github.com/chvmp/spot_ros
+  Revision ff6cf1def44624565a838db99e08b342ba009f2f
+  The upstream spot_description/package.xml declares the package as BSD.
+
+  Kinova Gen3 7-DOF description
+  https://github.com/Kinovarobotics/ros_kortex
+  Copyright (c) 2018, Kinova inc.
+  Revision c3280d8a6a6b5d96590d51538e3f265710a6c77d
+  Distributed under the BSD 3-Clause License in LICENSE.kortex.
+
+The composite body-to-mount and mount-to-arm transforms follow the ScorpioX
+spot_kortex.urdf.xacro definition from:
+
+  https://github.com/Liyunong20000/heterogeneous_robot.git
+  Revision 4e296e1fbef17a4399c0914cd69af5808beb089f
+
+For reinforcement learning, the generated URDF omits ROS/Gazebo plugins,
+transmissions, sensors, and the Robotiq gripper.  The four continuous Gen3
+joints are represented by revolute joints with +/- 2*pi limits so reset and
+joint-limit terms have finite ranges.  Geometry and inertial parameters remain
+from the referenced robot descriptions.

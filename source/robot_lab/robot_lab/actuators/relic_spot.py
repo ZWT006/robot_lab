@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import MISSING
 
 import torch
 from isaaclab.actuators.actuator_cfg import RemotizedPDActuatorCfg
@@ -13,8 +14,6 @@ from isaaclab.actuators.actuator_pd import RemotizedPDActuator
 from isaaclab.utils import LinearInterpolation, configclass
 from isaaclab.utils.types import ArticulationActions
 from torch._tensor import Tensor
-
-from robot_lab.assets.relic_spot_constants import NEG_TORQUE_SPEED_LIMIT, POS_TORQUE_SPEED_LIMIT
 
 
 class SpotKneeActuator(RemotizedPDActuator):
@@ -98,5 +97,5 @@ class SpotKneeActuatorCfg(RemotizedPDActuatorCfg):
     class_type: type = SpotKneeActuator
 
     enable_torque_speed_limit: bool = False
-    pos_torque_speed_limit: list[list[float]] = POS_TORQUE_SPEED_LIMIT
-    neg_torque_speed_limit: list[list[float]] = NEG_TORQUE_SPEED_LIMIT
+    pos_torque_speed_limit: list[list[float]] = MISSING
+    neg_torque_speed_limit: list[list[float]] = MISSING

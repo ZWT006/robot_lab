@@ -25,7 +25,7 @@ from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import isaaclab_tasks.manager_based.locomotion.velocity.mdp as isaac_mdp
 import robot_lab.tasks.manager_based.loco_manipulation.relic_interlimb.mdp as mdp
-from robot_lab.assets.relic_spot_constants import ARM_JOINT_NAMES, FEET_NAMES, LEG_ACTION_JOINT_NAMES, LEG_JOINT_NAMES
+from robot_lab.assets.quadarm import ARM_JOINT_NAMES, FEET_NAMES, LEG_ACTION_JOINT_NAMES, LEG_JOINT_NAMES
 
 
 ########################################################

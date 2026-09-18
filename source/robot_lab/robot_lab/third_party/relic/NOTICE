@@ -7,8 +7,7 @@ Isaac Lab 2.2 compatibility.
 
 Covered paths:
 
-- robot_lab/assets/relic_spot.py
-- robot_lab/assets/relic_spot_constants.py
+- the ReLIC Spot configuration and constants in robot_lab/assets/quadarm.py
 - robot_lab/actuators/relic_spot.py
 - robot_lab/tasks/manager_based/loco_manipulation/relic_interlimb/
 
