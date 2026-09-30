@@ -28,3 +28,10 @@ python scripts/reinforcement_learning/rsl_rl/play.py \
   env.commands.ee_trajectory.trajectory_file="$(pwd)/source/robot_lab/data/physical_ai/shorter_pushing_trajs.pkl" \
   --checkpoint="$(pwd)/logs/rsl_rl/lining_legs/2026-09-17_22-17-35_move/model_4000.pt"
 ```
+
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task RobotLab-Isaac-Unified-Force-v0 \
+  --headless
+```

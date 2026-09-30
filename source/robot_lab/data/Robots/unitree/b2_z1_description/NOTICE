@@ -1,0 +1,8 @@
+The B2 + Z1 URDF and Z1 mesh assets in this directory are derived from the
+Apache-2.0 licensed UniFP project:
+
+    https://github.com/deathpoker/UniFP
+
+Copyright and license terms are provided by the repository-level LICENSE file.
+The B2 mesh files are reused from the existing b2_description asset directory
+through relative URDF references and are not duplicated here.
