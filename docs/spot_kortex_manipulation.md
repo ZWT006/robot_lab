@@ -35,3 +35,33 @@ python scripts/reinforcement_learning/rsl_rl/train.py \
   --task RobotLab-Isaac-Unified-Force-v0 \
   --headless
 ```
+
+```
+tensorboard --logdir logs/rsl_rl/unified_force   --port 6006
+```
+
+```
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task RobotLab-Isaac-Unified-Force-Play-v0 \
+  --num_envs 4 \
+  --device cpu 
+```
+
+## Lining Unified (UniFP position/force on Spot + Kortex)
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task Lining-Unified-v0 \
+  --headless
+```
+
+```bash
+tensorboard --logdir logs/rsl_rl/lining_unified --port 6006
+```
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task Lining-Unified-Play-v0 \
+  --num_envs 4 \
+  --device cpu
+```

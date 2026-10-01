@@ -189,6 +189,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         from robot_lab.tasks.manager_based.loco_manipulation.unified_force.agents import UnifiedForceRunner
 
         runner = UnifiedForceRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
+    elif agent_cfg.class_name == "LiningUnifiedRunner":
+        from robot_lab.tasks.manager_based.loco_manipulation.lining_unified.agents import LiningUnifiedRunner
+
+        runner = LiningUnifiedRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
     elif agent_cfg.class_name == "DistillationRunner":
         runner = DistillationRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
     else:
