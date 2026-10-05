@@ -467,6 +467,13 @@ Lining_CFG = ArticulationCfg(
                 "arm_joint_[5-6]": 1.0,
                 "arm_joint_7": 0.5,
             },
+            # Reflected rotor inertia J_rotor * N^2 with N = 100: 1.928e-6 kg m^2 rotors
+            # on the large actuators, 1.5e-6 kg m^2 on the small ones. Without it the
+            # explicit PD chatters on the light wrist links (kd * dt / I ~ 10 on joint 7).
+            armature={
+                "arm_joint_[1-4]": 0.01928,
+                "arm_joint_[5-7]": 0.015,
+            },
             friction=0.0,
         ),
     },

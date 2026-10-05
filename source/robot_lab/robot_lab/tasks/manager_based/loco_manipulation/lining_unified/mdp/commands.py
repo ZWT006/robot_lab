@@ -324,9 +324,10 @@ class LiningUnifiedCommand(CommandTerm):
         count = len(env_ids)
         if count == 0:
             return
-        self.velocity_command_b[env_ids, 0].uniform_(*self.cfg.lin_vel_x_range)
-        self.velocity_command_b[env_ids, 1].uniform_(*self.cfg.lin_vel_y_range)
-        self.velocity_command_b[env_ids, 2].uniform_(*self.cfg.ang_vel_z_range)
+        r = torch.empty(count, device=self.device)
+        self.velocity_command_b[env_ids, 0] = r.uniform_(*self.cfg.lin_vel_x_range)
+        self.velocity_command_b[env_ids, 1] = r.uniform_(*self.cfg.lin_vel_y_range)
+        self.velocity_command_b[env_ids, 2] = r.uniform_(*self.cfg.ang_vel_z_range)
         standing = torch.rand(count, device=self.device) < self.cfg.zero_velocity_probability
         self.velocity_command_b[env_ids[standing]] = 0.0
         command = self.velocity_command_b[env_ids]
@@ -336,7 +337,7 @@ class LiningUnifiedCommand(CommandTerm):
             | (torch.abs(command[:, 2]) > self.cfg.ang_vel_z_deadband)
         )
         self.velocity_command_b[env_ids] *= moving.unsqueeze(-1)
-        self._velocity_time_left[env_ids].uniform_(*self.cfg.velocity_resampling_time_range_s)
+        self._velocity_time_left[env_ids] = r.uniform_(*self.cfg.velocity_resampling_time_range_s)
 
     def _advance_ee_goal(self, dt: float):
         self._goal_elapsed += dt
@@ -367,12 +368,10 @@ class LiningUnifiedCommand(CommandTerm):
             unresolved = unresolved[collision]
             if len(unresolved) == 0:
                 break
-        count = len(env_ids)
-        self.ee_orientation_delta[env_ids, 0].uniform_(*self.cfg.ee_delta_roll_range)
-        self.ee_orientation_delta[env_ids, 1].uniform_(*self.cfg.ee_delta_pitch_range)
-        self.ee_orientation_delta[env_ids, 2].uniform_(*self.cfg.ee_delta_yaw_range)
-        if count == 0:
-            return
+        r = torch.empty(len(env_ids), device=self.device)
+        self.ee_orientation_delta[env_ids, 0] = r.uniform_(*self.cfg.ee_delta_roll_range)
+        self.ee_orientation_delta[env_ids, 1] = r.uniform_(*self.cfg.ee_delta_pitch_range)
+        self.ee_orientation_delta[env_ids, 2] = r.uniform_(*self.cfg.ee_delta_yaw_range)
 
     def _sample_sphere(self, count: int) -> torch.Tensor:
         sample = torch.empty(count, 3, device=self.device)
@@ -392,8 +391,9 @@ class LiningUnifiedCommand(CommandTerm):
         return torch.any(inside_box | underground, dim=1)
 
     def _sample_goal_times(self, env_ids: torch.Tensor):
-        self._goal_travel_time[env_ids].uniform_(*self.cfg.ee_trajectory_time_range_s)
+        travel = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ee_trajectory_time_range_s)
         hold = torch.empty(len(env_ids), device=self.device).uniform_(*self.cfg.ee_hold_time_range_s)
+        self._goal_travel_time[env_ids] = travel
         self._goal_total_time[env_ids] = self._goal_travel_time[env_ids] + hold
 
     def _refresh_ee_target(self):
@@ -425,7 +425,7 @@ class LiningUnifiedCommand(CommandTerm):
         pulse["phase"][env_ids] = 0.0
         pulse["target"][env_ids] = 0.0
         pulse["current"][env_ids] = 0.0
-        pulse["time_to_start"][env_ids].uniform_(*interval_range)
+        pulse["time_to_start"][env_ids] = torch.empty(len(env_ids), device=self.device).uniform_(*interval_range)
 
     def _update_pulse(
         self,
@@ -448,10 +448,10 @@ class LiningUnifiedCommand(CommandTerm):
             if len(selected) > 0:
                 pulse["active"][selected] = True
                 pulse["phase"][selected] = 0.0
-                pulse["duration"][selected].uniform_(*duration_range)
-                pulse["target"][selected].uniform_(*force_range)
+                pulse["duration"][selected] = torch.empty(len(selected), device=self.device).uniform_(*duration_range)
+                pulse["target"][selected] = torch.empty(len(selected), 3, device=self.device).uniform_(*force_range)
             if len(skipped) > 0:
-                pulse["time_to_start"][skipped].uniform_(*interval_range)
+                pulse["time_to_start"][skipped] = torch.empty(len(skipped), device=self.device).uniform_(*interval_range)
 
         active_ids = pulse["active"].nonzero().flatten()
         if len(active_ids) == 0:
@@ -475,7 +475,7 @@ class LiningUnifiedCommand(CommandTerm):
             pulse["phase"][finished] = 0.0
             pulse["target"][finished] = 0.0
             pulse["current"][finished] = 0.0
-            pulse["time_to_start"][finished].uniform_(*interval_range)
+            pulse["time_to_start"][finished] = torch.empty(len(finished), device=self.device).uniform_(*interval_range)
 
     def _assemble_command(self):
         self._command[:, :3] = self.velocity_command_b
