@@ -40,6 +40,8 @@ from isaaclab.utils import configclass
 import robot_lab.tasks.manager_based.loco_manipulation.lining_unified.mdp as mdp
 from robot_lab.assets.quadarm import Lining_CFG
 
+from .ui import LiningUnifiedEnvWindow
+
 LEG_JOINT_NAMES = [
     "front_left_hip_x",
     "front_left_hip_y",
@@ -489,6 +491,7 @@ class LiningUnifiedEnvCfg_PLAY(LiningUnifiedEnvCfg):
 
     def __post_init__(self):
         super().__post_init__()
+        self.ui_window_class_type = LiningUnifiedEnvWindow
         self.scene.num_envs = 1
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 1

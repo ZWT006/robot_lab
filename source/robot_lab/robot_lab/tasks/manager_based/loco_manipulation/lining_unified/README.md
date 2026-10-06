@@ -38,3 +38,8 @@ python scripts/reinforcement_learning/rsl_rl/play.py \
 
 Force pulses start after `8000 * 24` policy steps during training and
 immediately in the play configuration.
+
+In play mode, the **Scene Debug Visualization** panel provides independent
+**Target Ee Pose** and **External Force** checkboxes. The force arrows are
+anchored at the base and end-effector centers and scale at 1 cm per newton; the
+pose marker shows the force-compliant target used by the tracking reward.

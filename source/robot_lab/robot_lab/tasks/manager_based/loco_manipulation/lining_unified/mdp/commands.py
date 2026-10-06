@@ -12,15 +12,19 @@ the center of Spot's body.
 from __future__ import annotations
 
 import math
+import weakref
 from collections.abc import Sequence
 from dataclasses import MISSING
 from typing import TYPE_CHECKING, cast
 
+import omni.kit.app
 import torch
 
 import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation
 from isaaclab.managers import CommandTerm, CommandTermCfg
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
+from isaaclab.markers.config import FRAME_MARKER_CFG, RED_ARROW_X_MARKER_CFG
 from isaaclab.utils import configclass
 
 if TYPE_CHECKING:
@@ -72,6 +76,8 @@ class LiningUnifiedCommand(CommandTerm):
 
     def __init__(self, cfg: LiningUnifiedCommandCfg, env: ManagerBasedRLEnv):
         super().__init__(cfg, env)
+        if cfg.external_force_arrow_scale <= 0.0:
+            raise ValueError("external_force_arrow_scale must be positive")
         self.robot: Articulation = env.scene[cfg.asset_name]
         ee_ids, _ = self.robot.find_bodies(cfg.ee_body_name)
         base_ids, _ = self.robot.find_bodies(cfg.base_body_name)
@@ -123,6 +129,17 @@ class LiningUnifiedCommand(CommandTerm):
         self.metrics["ee_position_error"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["ee_orientation_error"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["base_velocity_error"] = torch.zeros(self.num_envs, device=self.device)
+
+        self._external_force_debug_vis_handle = None
+        if cfg.external_force_debug_vis:
+            self.set_external_force_debug_vis(True)
+
+    def __del__(self):
+        """Unsubscribe the external-force callback before the command is destroyed."""
+        if getattr(self, "_external_force_debug_vis_handle", None):
+            self._external_force_debug_vis_handle.unsubscribe()
+            self._external_force_debug_vis_handle = None
+        super().__del__()
 
     @property
     def command(self) -> torch.Tensor:
@@ -233,6 +250,80 @@ class LiningUnifiedCommand(CommandTerm):
             math_utils.quat_apply_inverse(yaw, self.ee_external_force_w),
             math_utils.quat_apply_inverse(yaw, self.base_external_force_w),
         )
+
+    def _set_debug_vis_impl(self, debug_vis: bool):
+        """Toggle the world-frame force-compliant target EE pose marker."""
+        if debug_vis:
+            if not hasattr(self, "target_pose_visualizer"):
+                self.target_pose_visualizer = VisualizationMarkers(self.cfg.target_pose_visualizer_cfg)
+            self.target_pose_visualizer.set_visibility(True)
+        elif hasattr(self, "target_pose_visualizer"):
+            self.target_pose_visualizer.set_visibility(False)
+
+    def _debug_vis_callback(self, event):
+        if not self.robot.is_initialized:
+            return
+        self.target_pose_visualizer.visualize(self.ee_compliant_target_pos_w, self.ee_target_quat_w)
+
+    def set_external_force_debug_vis(self, debug_vis: bool):
+        """Toggle arrows for the external forces applied at the base and EE."""
+        if debug_vis:
+            if not hasattr(self, "external_force_visualizer"):
+                self.external_force_visualizer = VisualizationMarkers(self.cfg.external_force_visualizer_cfg)
+            self.external_force_visualizer.set_visibility(True)
+            if self._external_force_debug_vis_handle is None:
+                app_interface = omni.kit.app.get_app_interface()
+                self._external_force_debug_vis_handle = (
+                    app_interface.get_post_update_event_stream().create_subscription_to_pop(
+                        lambda event, obj=weakref.proxy(self): obj._external_force_debug_vis_callback(event)
+                    )
+                )
+        else:
+            if hasattr(self, "external_force_visualizer"):
+                self.external_force_visualizer.set_visibility(False)
+            if self._external_force_debug_vis_handle is not None:
+                self._external_force_debug_vis_handle.unsubscribe()
+                self._external_force_debug_vis_handle = None
+
+    def _external_force_debug_vis_callback(self, event):
+        if not self.robot.is_initialized:
+            return
+
+        forces_w = torch.stack((self.base_external_force_w, self.ee_external_force_w), dim=1).reshape(-1, 3)
+        positions_w = self.robot.data.body_com_pos_w[:, self._wrench_body_ids].reshape(-1, 3)
+        magnitudes = torch.linalg.norm(forces_w, dim=-1)
+        orientations = self._vector_to_arrow_orientation(forces_w, magnitudes)
+
+        scales = torch.ones_like(forces_w)
+        scales[:, 0] = magnitudes * self.cfg.external_force_arrow_scale
+        scales[magnitudes <= 1.0e-6] = 0.0
+        self.external_force_visualizer.visualize(positions_w, orientations, scales)
+
+    def _vector_to_arrow_orientation(
+        self, vectors: torch.Tensor, magnitudes: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        """Rotate the marker's +X axis onto each world-frame vector."""
+        if magnitudes is None:
+            magnitudes = torch.linalg.norm(vectors, dim=-1)
+        default_direction = torch.tensor([1.0, 0.0, 0.0], device=self.device, dtype=vectors.dtype).expand_as(vectors)
+        unit_direction = torch.where(
+            magnitudes.unsqueeze(-1) > 1.0e-6,
+            vectors / magnitudes.unsqueeze(-1).clamp_min(1.0e-6),
+            default_direction,
+        )
+
+        rotation_axis = torch.linalg.cross(default_direction, unit_direction, dim=-1)
+        axis_norm = torch.linalg.norm(rotation_axis, dim=-1)
+        fallback_axis = torch.tensor([0.0, 0.0, 1.0], device=self.device, dtype=vectors.dtype).expand_as(vectors)
+        rotation_axis = torch.where(
+            axis_norm.unsqueeze(-1) > 1.0e-6,
+            rotation_axis / axis_norm.unsqueeze(-1).clamp_min(1.0e-6),
+            fallback_axis,
+        )
+
+        angle = torch.acos(torch.clamp(torch.sum(default_direction * unit_direction, dim=-1), -1.0, 1.0))
+        angle = torch.where(magnitudes > 1.0e-6, angle, torch.zeros_like(angle))
+        return math_utils.quat_from_angle_axis(angle, rotation_axis)
 
     def _update_metrics(self):
         ee_position = self.robot.data.body_link_pos_w[:, self.ee_body_id]
@@ -570,3 +661,15 @@ class LiningUnifiedCommandCfg(CommandTermCfg):
     gait_cycle_time: float = 0.64
     gait_joint_scale: float = 0.17
     gait_double_support_threshold: float = 0.5
+
+    external_force_debug_vis: bool = False
+    # Arrow length in meters per newton; marker thickness is fixed below.
+    external_force_arrow_scale: float = 0.01
+    target_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(
+        prim_path="/Visuals/Command/lining_unified/target_ee_pose"
+    )
+    external_force_visualizer_cfg: VisualizationMarkersCfg = RED_ARROW_X_MARKER_CFG.replace(
+        prim_path="/Visuals/Command/lining_unified/external_force"
+    )
+    target_pose_visualizer_cfg.markers["frame"].scale = (0.12, 0.12, 0.12)
+    external_force_visualizer_cfg.markers["arrow"].scale = (1.0, 0.05, 0.05)
