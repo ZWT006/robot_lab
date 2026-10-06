@@ -41,5 +41,22 @@ immediately in the play configuration.
 
 In play mode, the **Scene Debug Visualization** panel provides independent
 **Target Ee Pose** and **External Force** checkboxes. The force arrows are
-anchored at the base and end-effector centers and scale at 1 cm per newton; the
-pose marker shows the force-compliant target used by the tracking reward.
+anchored at the base and end-effector centers and scale at 1 cm per newton. The
+pose marker always shows the nominal target, without its force-compliance offset.
+
+Two additional play tasks provide ready-to-use visualization presets. Both
+disable base velocity and force commands as well as the virtual EE force command:
+
+```bash
+# Moving EE target without external force.
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task Lining-Unified-Target-Only-Play-v0 \
+  --num_envs 1 \
+  --checkpoint /path/to/model.pt
+
+# The same nominal EE target with physical external-force pulses at the EE.
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task Lining-Unified-External-Force-Play-v0 \
+  --num_envs 1 \
+  --checkpoint /path/to/model.pt
+```

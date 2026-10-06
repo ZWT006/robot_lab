@@ -252,7 +252,7 @@ class LiningUnifiedCommand(CommandTerm):
         )
 
     def _set_debug_vis_impl(self, debug_vis: bool):
-        """Toggle the world-frame force-compliant target EE pose marker."""
+        """Toggle the nominal world-frame target EE pose marker."""
         if debug_vis:
             if not hasattr(self, "target_pose_visualizer"):
                 self.target_pose_visualizer = VisualizationMarkers(self.cfg.target_pose_visualizer_cfg)
@@ -263,7 +263,7 @@ class LiningUnifiedCommand(CommandTerm):
     def _debug_vis_callback(self, event):
         if not self.robot.is_initialized:
             return
-        self.target_pose_visualizer.visualize(self.ee_compliant_target_pos_w, self.ee_target_quat_w)
+        self.target_pose_visualizer.visualize(self.ee_target_pos_w, self.ee_target_quat_w)
 
     def set_external_force_debug_vis(self, debug_vis: bool):
         """Toggle arrows for the external forces applied at the base and EE."""
@@ -370,24 +370,26 @@ class LiningUnifiedCommand(CommandTerm):
         self.gait_phase[~self.walking_mask] = 0.0
 
         if self._env.common_step_counter >= self.cfg.force_start_step:
-            self._update_pulse(
-                "ee_command",
-                dt,
-                self.cfg.ee_force_interval_range_s,
-                self.cfg.ee_force_duration_range_s,
-                self.cfg.ee_force_settling_time_s,
-                self.cfg.ee_force_range,
-                self.cfg.ee_force_active_probability,
-            )
-            self._update_pulse(
-                "ee_external",
-                dt,
-                self.cfg.ee_force_interval_range_s,
-                self.cfg.ee_force_duration_range_s,
-                self.cfg.ee_force_settling_time_s,
-                self.cfg.ee_force_range,
-                self.cfg.ee_force_active_probability,
-            )
+            if self.cfg.apply_ee_force_command:
+                self._update_pulse(
+                    "ee_command",
+                    dt,
+                    self.cfg.ee_force_interval_range_s,
+                    self.cfg.ee_force_duration_range_s,
+                    self.cfg.ee_force_settling_time_s,
+                    self.cfg.ee_force_range,
+                    self.cfg.ee_force_active_probability,
+                )
+            if self.cfg.apply_ee_external_force:
+                self._update_pulse(
+                    "ee_external",
+                    dt,
+                    self.cfg.ee_force_interval_range_s,
+                    self.cfg.ee_force_duration_range_s,
+                    self.cfg.ee_force_settling_time_s,
+                    self.cfg.ee_force_range,
+                    self.cfg.ee_force_active_probability,
+                )
             self._update_pulse(
                 "base_command",
                 dt,
@@ -646,6 +648,8 @@ class LiningUnifiedCommandCfg(CommandTermCfg):
     # shoulder keeps only ~15 Nm after gravity compensation at full reach.
     ee_force_range: tuple[float, float] = (-20.0, 20.0)
     ee_stiffness: float = 200.0
+    apply_ee_force_command: bool = True
+    apply_ee_external_force: bool = True
 
     base_force_interval_range_s: tuple[float, float] = (3.5, 9.0)
     base_force_duration_range_s: tuple[float, float] = (1.0, 3.0)
