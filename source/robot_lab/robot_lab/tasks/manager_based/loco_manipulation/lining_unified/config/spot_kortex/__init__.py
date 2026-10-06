@@ -25,23 +25,3 @@ gym.register(
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:LiningUnifiedPPORunnerCfg",
     },
 )
-
-gym.register(
-    id="Lining-Unified-Target-Only-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.env_cfg:LiningUnifiedTargetOnlyEnvCfg_PLAY",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:LiningUnifiedPPORunnerCfg",
-    },
-)
-
-gym.register(
-    id="Lining-Unified-External-Force-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.env_cfg:LiningUnifiedExternalForceEnvCfg_PLAY",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:LiningUnifiedPPORunnerCfg",
-    },
-)

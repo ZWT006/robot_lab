@@ -499,44 +499,12 @@ class LiningUnifiedEnvCfg_PLAY(LiningUnifiedEnvCfg):
         self.observations.policy.frame.params["add_noise"] = False
         self.actions.joint_pos.motor_strength_range = (1.0, 1.0)
         self.commands.lining_unified.force_start_step = 0
+        # Play exposes only physical EE disturbances; virtual force commands would
+        # otherwise shift the compliant target independently of the three UI flags.
+        self.commands.lining_unified.apply_ee_force_command = False
+        self.commands.lining_unified.apply_base_external_force = False
         self.events.randomize_material = None
         self.events.randomize_base_mass = None
         self.events.randomize_payload_mass = None
         self.events.randomize_base_com = None
         self.events.push_robot = None
-
-    def _disable_base_commands(self):
-        """Disable base velocity, commanded force, and external-force disturbances."""
-        command = self.commands.lining_unified
-        command.lin_vel_x_range = (0.0, 0.0)
-        command.lin_vel_y_range = (0.0, 0.0)
-        command.ang_vel_z_range = (0.0, 0.0)
-        command.zero_velocity_probability = 1.0
-        command.base_force_active_probability = 0.0
-        command.apply_base_external_force = False
-
-
-@configclass
-class LiningUnifiedTargetOnlyEnvCfg_PLAY(LiningUnifiedEnvCfg_PLAY):
-    """Visualize the nominal EE target without base commands or EE forces."""
-
-    def __post_init__(self):
-        super().__post_init__()
-        self._disable_base_commands()
-        self.commands.lining_unified.apply_ee_force_command = False
-        self.commands.lining_unified.apply_ee_external_force = False
-        self.commands.lining_unified.debug_vis = True
-        self.commands.lining_unified.external_force_debug_vis = False
-
-
-@configclass
-class LiningUnifiedExternalForceEnvCfg_PLAY(LiningUnifiedEnvCfg_PLAY):
-    """Visualize EE external-force disturbances against the nominal EE target."""
-
-    def __post_init__(self):
-        super().__post_init__()
-        self._disable_base_commands()
-        self.commands.lining_unified.apply_ee_force_command = False
-        self.commands.lining_unified.apply_ee_external_force = True
-        self.commands.lining_unified.debug_vis = True
-        self.commands.lining_unified.external_force_debug_vis = True

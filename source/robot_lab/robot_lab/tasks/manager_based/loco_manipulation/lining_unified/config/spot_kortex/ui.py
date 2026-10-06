@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class LiningUnifiedEnvWindow(ManagerBasedRLEnvWindow):
-    """Add independent target-pose and external-force visualization controls."""
+    """Add visualization and runtime command controls for play mode."""
 
     def __init__(self, env: ManagerBasedRLEnv, window_name: str = "IsaacLab"):
         super().__init__(env, window_name)
@@ -29,23 +29,51 @@ class LiningUnifiedEnvWindow(ManagerBasedRLEnvWindow):
             with self.ui_window_elements["debug_vstack"]:
                 omni.ui.Separator(height=4)
                 self._create_debug_vis_ui_element("target_ee_pose", self._lining_unified_command)
-                self._build_external_force_debug_control()
+                self._build_bool_control(
+                    label="Show External Force",
+                    element_name="show_external_force",
+                    checked=self._lining_unified_command.cfg.external_force_debug_vis,
+                    callback=self._lining_unified_command.set_external_force_debug_vis,
+                    tooltip="Show arrows whose direction and length represent the applied external forces.",
+                )
+                omni.ui.Separator(height=4)
+                self._build_bool_control(
+                    label="Mask Base Command",
+                    element_name="mask_base_command",
+                    checked=self._lining_unified_command.cfg.mask_base_command,
+                    callback=self._lining_unified_command.set_mask_base_command,
+                    tooltip="Set base velocity and virtual-force commands to zero for every environment.",
+                )
+                self._build_bool_control(
+                    label="Refresh EE Target",
+                    element_name="refresh_ee_target",
+                    checked=self._lining_unified_command.cfg.refresh_ee_target,
+                    callback=self._lining_unified_command.set_refresh_ee_target,
+                    tooltip="Advance the local EE target trajectory and refresh its world pose around the moving base.",
+                )
+                self._build_bool_control(
+                    label="Apply EE External Force",
+                    element_name="apply_ee_external_force",
+                    checked=self._lining_unified_command.cfg.apply_ee_external_force,
+                    callback=self._lining_unified_command.set_apply_ee_external_force,
+                    tooltip="Apply physical external-force pulses at the end effector.",
+                )
 
-    def _build_external_force_debug_control(self):
-        """Build the checkbox for applied external-force arrows."""
+    def _build_bool_control(self, label: str, element_name: str, checked: bool, callback, tooltip: str):
+        """Build a checkbox backed by a command-term runtime setter."""
         from omni.kit.window.extensions import SimpleCheckBox
 
         with omni.ui.HStack():
             omni.ui.Label(
-                "External Force",
+                label,
                 width=isaacsim.gui.components.ui_utils.LABEL_WIDTH - 12,
                 alignment=omni.ui.Alignment.LEFT_CENTER,
-                tooltip="Show arrows for forces applied at the base and end effector; length scales with force magnitude.",
+                tooltip=tooltip,
             )
-            self.ui_window_elements["external_force_cb"] = SimpleCheckBox(
+            self.ui_window_elements[f"{element_name}_cb"] = SimpleCheckBox(
                 model=omni.ui.SimpleBoolModel(),
                 enabled=True,
-                checked=self._lining_unified_command.cfg.external_force_debug_vis,
-                on_checked_fn=self._lining_unified_command.set_external_force_debug_vis,
+                checked=checked,
+                on_checked_fn=callback,
             )
             isaacsim.gui.components.ui_utils.add_line_rect_flourish()

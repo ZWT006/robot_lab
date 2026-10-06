@@ -40,23 +40,25 @@ Force pulses start after `8000 * 24` policy steps during training and
 immediately in the play configuration.
 
 In play mode, the **Scene Debug Visualization** panel provides independent
-**Target Ee Pose** and **External Force** checkboxes. The force arrows are
-anchored at the base and end-effector centers and scale at 1 cm per newton. The
-pose marker always shows the nominal target, without its force-compliance offset.
+checkboxes for the target-pose and force-arrow visibility as well as three
+runtime command controls:
 
-Two additional play tasks provide ready-to-use visualization presets. Both
-disable base velocity and force commands as well as the virtual EE force command:
+- **Mask Base Command** zeros the base velocity and virtual-force commands.
+- **Refresh EE Target** advances the local target trajectory and recomputes its
+  world pose around the moving base. Turning it off freezes the current target
+  pose in world coordinates.
+- **Apply EE External Force** enables physical force pulses at the end effector.
+
+The target marker always shows the nominal target without its force-compliance
+offset. Force arrows are anchored at the base and end-effector centers and scale
+at 1 cm per newton. The same behavior can be selected before launch with Hydra:
 
 ```bash
-# Moving EE target without external force.
 python scripts/reinforcement_learning/rsl_rl/play.py \
-  --task Lining-Unified-Target-Only-Play-v0 \
+  --task Lining-Unified-Play-v0 \
   --num_envs 1 \
-  --checkpoint /path/to/model.pt
-
-# The same nominal EE target with physical external-force pulses at the EE.
-python scripts/reinforcement_learning/rsl_rl/play.py \
-  --task Lining-Unified-External-Force-Play-v0 \
-  --num_envs 1 \
-  --checkpoint /path/to/model.pt
+  --checkpoint /path/to/model.pt \
+  env.commands.lining_unified.mask_base_command=true \
+  env.commands.lining_unified.refresh_ee_target=true \
+  env.commands.lining_unified.apply_ee_external_force=false
 ```
