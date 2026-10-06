@@ -38,7 +38,9 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
 import robot_lab.tasks.manager_based.loco_manipulation.lining_unified.mdp as mdp
-from robot_lab.assets.quadarm import Lining_CFG
+from robot_lab.assets.quadarm import LINING_ACTION_SCALE, Lining_CFG
+
+from .ui import LiningUnifiedEnvWindow
 
 LEG_JOINT_NAMES = [
     "front_left_hip_x",
@@ -153,7 +155,7 @@ class ActionsCfg:
     joint_pos = mdp.LiningUnifiedJointPositionActionCfg(
         asset_name="robot",
         joint_names=POLICY_JOINT_NAMES,
-        scale=0.25,
+        scale=LINING_ACTION_SCALE,
         use_default_offset=True,
         preserve_order=True,
         motor_strength_range=(0.85, 1.15),
@@ -168,6 +170,7 @@ class ObservationsCfg:
             func=mdp.LiningUnifiedPolicyObservation,
             params={
                 "command_name": "lining_unified",
+                "action_name": "joint_pos",
                 "asset_cfg": SceneEntityCfg("robot"),
                 "joint_names": POLICY_JOINT_NAMES,
                 "add_noise": True,
@@ -489,6 +492,7 @@ class LiningUnifiedEnvCfg_PLAY(LiningUnifiedEnvCfg):
 
     def __post_init__(self):
         super().__post_init__()
+        self.ui_window_class_type = LiningUnifiedEnvWindow
         self.scene.num_envs = 1
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 1

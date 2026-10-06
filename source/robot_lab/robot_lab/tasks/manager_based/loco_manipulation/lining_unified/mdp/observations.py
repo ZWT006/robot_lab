@@ -66,11 +66,13 @@ class LiningUnifiedPolicyObservation(ManagerTermBase):
         self,
         env: ManagerBasedRLEnv,
         command_name: str,
+        action_name: str,
         asset_cfg: SceneEntityCfg,
         joint_names: list[str],
         add_noise: bool,
     ) -> torch.Tensor:
         command = _command(env, command_name)
+        action_term = env.action_manager.get_term(action_name)
         roll, pitch, _ = math_utils.euler_xyz_from_quat(self.robot.data.root_link_quat_w)
         joint_pos, joint_vel = _policy_joint_state(self.robot, self.joint_ids)
         phase = 2.0 * torch.pi * command.gait_phase
@@ -80,7 +82,7 @@ class LiningUnifiedPolicyObservation(ManagerTermBase):
                 self.robot.data.root_link_ang_vel_b * 0.25,
                 joint_pos,
                 joint_vel * 0.05,
-                env.action_manager.action,
+                action_term.scaled_actions,
                 torch.sin(phase).unsqueeze(-1),
                 torch.cos(phase).unsqueeze(-1),
                 command.command * self.command_scale,
@@ -186,7 +188,7 @@ class LiningUnifiedCriticObservation(ManagerTermBase):
                 self.robot.data.root_link_ang_vel_b * 0.25,
                 joint_pos,
                 joint_vel * 0.05,
-                env.action_manager.action,
+                action_term.scaled_actions,
                 torch.sin(phase).unsqueeze(-1),
                 torch.cos(phase).unsqueeze(-1),
                 command.command * self.command_scale,

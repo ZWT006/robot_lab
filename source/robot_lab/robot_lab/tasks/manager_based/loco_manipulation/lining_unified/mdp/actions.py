@@ -26,7 +26,14 @@ class LiningUnifiedJointPositionAction(JointPositionAction):
         self.motor_strength = torch.empty(self.num_envs, self.action_dim, device=self.device).uniform_(
             *cfg.motor_strength_range
         )
-        self._scale = self.motor_strength * float(cfg.scale)
+        # The parent resolves ``cfg.scale`` (float or per-joint dict) into ``self._scale``.
+        self.nominal_scale = torch.ones(self.num_envs, self.action_dim, device=self.device) * self._scale
+        self._scale = self.motor_strength * self.nominal_scale
+
+    @property
+    def scaled_actions(self) -> torch.Tensor:
+        """Last action as a joint-target offset in rad, without the hidden motor strength."""
+        return self.raw_actions * self.nominal_scale
 
 
 @configclass

@@ -16,6 +16,8 @@ Spot leg joints and the seven Gen3 arm joints; the fixed tool frame is not an
 actuated joint.
 """
 
+import math
+
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import DelayedPDActuatorCfg, IdealPDActuatorCfg
 from isaaclab.assets import ArticulationCfg
@@ -357,7 +359,7 @@ GO2_ARX5_CFG = ArticulationCfg(
         # used by the released controller.
         "legs": DelayedPDActuatorCfg(
             joint_names_expr=[".*_(hip|thigh|calf)_joint"],
-            min_delay=4,
+            min_delay=1,  # 5-20 ms command latency, resampled per env on reset
             max_delay=4,
             effort_limit={
                 ".*_hip_joint": 35.278,
@@ -371,7 +373,7 @@ GO2_ARX5_CFG = ArticulationCfg(
         ),
         "arm": DelayedPDActuatorCfg(
             joint_names_expr=["joint[1-6]"],
-            min_delay=4,
+            min_delay=1,  # 5-20 ms command latency, resampled per env on reset
             max_delay=4,
             effort_limit={
                 "joint[12]": 20.0,
@@ -386,6 +388,18 @@ GO2_ARX5_CFG = ArticulationCfg(
     },
 )
 
+
+# Kortex Gen3 gains follow BeyondMimic (whole_body_tracking/robots/g1.py):
+# kp = armature * w^2, kd = 2 * zeta * armature * w with a 10 Hz natural frequency
+# and zeta = 2. Armature is the reflected rotor inertia J_rotor * N^2 with N = 100.
+KORTEX_ARMATURE_LARGE = 1.928e-6 * 100.0**2  # actuators 1-4
+KORTEX_ARMATURE_SMALL = 1.5e-6 * 100.0**2  # actuators 5-7
+KORTEX_NATURAL_FREQ = 10.0 * 2.0 * math.pi
+KORTEX_DAMPING_RATIO = 2.0
+KORTEX_STIFFNESS_LARGE = KORTEX_ARMATURE_LARGE * KORTEX_NATURAL_FREQ**2
+KORTEX_STIFFNESS_SMALL = KORTEX_ARMATURE_SMALL * KORTEX_NATURAL_FREQ**2
+KORTEX_DAMPING_LARGE = 2.0 * KORTEX_DAMPING_RATIO * KORTEX_ARMATURE_LARGE * KORTEX_NATURAL_FREQ
+KORTEX_DAMPING_SMALL = 2.0 * KORTEX_DAMPING_RATIO * KORTEX_ARMATURE_SMALL * KORTEX_NATURAL_FREQ
 
 Lining_CFG = ArticulationCfg(
     spawn=sim_utils.UrdfFileCfg(
@@ -437,7 +451,7 @@ Lining_CFG = ArticulationCfg(
     actuators={
         "spot_legs": DelayedPDActuatorCfg(
             joint_names_expr=["(front|rear)_(left|right)_(hip_[xy]|knee)"],
-            min_delay=4,
+            min_delay=1,  # 5-20 ms command latency, resampled per env on reset
             max_delay=4,
             effort_limit={
                 ".*_hip_[xy]": 45.0,
@@ -450,7 +464,7 @@ Lining_CFG = ArticulationCfg(
         ),
         "kortex_arm": DelayedPDActuatorCfg(
             joint_names_expr=["arm_joint_[1-7]"],
-            min_delay=4,
+            min_delay=1,  # 5-20 ms command latency, resampled per env on reset
             max_delay=4,
             effort_limit={
                 "arm_joint_[1-4]": 39.0,
@@ -458,26 +472,31 @@ Lining_CFG = ArticulationCfg(
             },
             velocity_limit=1.4,
             stiffness={
-                "arm_joint_[1-4]": 40.0,
-                "arm_joint_[5-6]": 20.0,
-                "arm_joint_7": 10.0,
+                "arm_joint_[1-4]": KORTEX_STIFFNESS_LARGE,
+                "arm_joint_[5-7]": KORTEX_STIFFNESS_SMALL,
             },
             damping={
-                "arm_joint_[1-4]": 2.0,
-                "arm_joint_[5-6]": 1.0,
-                "arm_joint_7": 0.5,
+                "arm_joint_[1-4]": KORTEX_DAMPING_LARGE,
+                "arm_joint_[5-7]": KORTEX_DAMPING_SMALL,
             },
-            # Reflected rotor inertia J_rotor * N^2 with N = 100: 1.928e-6 kg m^2 rotors
-            # on the large actuators, 1.5e-6 kg m^2 on the small ones. Without it the
-            # explicit PD chatters on the light wrist links (kd * dt / I ~ 10 on joint 7).
+            # Without armature the explicit PD chatters on the light wrist links
+            # (kd * dt / I ~ 10 on joint 7).
             armature={
-                "arm_joint_[1-4]": 0.01928,
-                "arm_joint_[5-7]": 0.015,
+                "arm_joint_[1-4]": KORTEX_ARMATURE_LARGE,
+                "arm_joint_[5-7]": KORTEX_ARMATURE_SMALL,
             },
             friction=0.0,
         ),
     },
 )
+
+# BeyondMimic action scale: one unit of action commands 25% of the joint's peak
+# effort at zero velocity, i.e. 0.25 * effort_limit / stiffness.
+LINING_ACTION_SCALE: dict[str, float] = {}
+for _actuator in Lining_CFG.actuators.values():
+    for _name, _effort in _actuator.effort_limit.items():
+        _stiffness = _actuator.stiffness[_name] if isinstance(_actuator.stiffness, dict) else _actuator.stiffness
+        LINING_ACTION_SCALE[_name] = 0.25 * _effort / _stiffness
 
 # The following configuration is derived from ReLIC and is governed by the
 # RAI Institute Research License in third_party/relic/LICENSE.
