@@ -251,8 +251,32 @@ class LiningUnifiedCommand(CommandTerm):
             math_utils.quat_apply_inverse(yaw, self.base_external_force_w),
         )
 
+    def set_mask_base_command(self, mask: bool):
+        """Toggle all base velocity and virtual-force commands at runtime."""
+        self.cfg.mask_base_command = bool(mask)
+        env_ids = torch.arange(self.num_envs, device=self.device)
+        self._reset_pulse("base_command", env_ids, self.cfg.base_force_interval_range_s)
+        if mask:
+            self.velocity_command_b.zero_()
+            self.gait_phase.zero_()
+            self._assemble_command()
+        else:
+            self._velocity_time_left.zero_()
+
+    def set_refresh_ee_target(self, refresh: bool):
+        """Toggle advancement of the local EE target and its world-frame refresh."""
+        self.cfg.refresh_ee_target = bool(refresh)
+
+    def set_apply_ee_external_force(self, apply_force: bool):
+        """Toggle the physical external-force pulse applied at the EE."""
+        self.cfg.apply_ee_external_force = bool(apply_force)
+        env_ids = torch.arange(self.num_envs, device=self.device)
+        self._reset_pulse("ee_external", env_ids, self.cfg.ee_force_interval_range_s)
+        if not apply_force and self.robot.is_initialized:
+            self._write_external_wrenches()
+
     def _set_debug_vis_impl(self, debug_vis: bool):
-        """Toggle the world-frame force-compliant target EE pose marker."""
+        """Toggle the nominal world-frame target EE pose marker."""
         if debug_vis:
             if not hasattr(self, "target_pose_visualizer"):
                 self.target_pose_visualizer = VisualizationMarkers(self.cfg.target_pose_visualizer_cfg)
@@ -263,7 +287,7 @@ class LiningUnifiedCommand(CommandTerm):
     def _debug_vis_callback(self, event):
         if not self.robot.is_initialized:
             return
-        self.target_pose_visualizer.visualize(self.ee_compliant_target_pos_w, self.ee_target_quat_w)
+        self.target_pose_visualizer.visualize(self.ee_target_pos_w, self.ee_target_quat_w)
 
     def set_external_force_debug_vis(self, debug_vis: bool):
         """Toggle arrows for the external forces applied at the base and EE."""
@@ -360,43 +384,50 @@ class LiningUnifiedCommand(CommandTerm):
 
     def _update_command(self):
         dt = self._env.step_dt
-        self._velocity_time_left -= dt
-        velocity_ids = (self._velocity_time_left <= 0.0).nonzero().flatten()
-        if len(velocity_ids) > 0:
-            self._resample_velocity(velocity_ids)
+        if self.cfg.mask_base_command:
+            self.velocity_command_b.zero_()
+        else:
+            self._velocity_time_left -= dt
+            velocity_ids = (self._velocity_time_left <= 0.0).nonzero().flatten()
+            if len(velocity_ids) > 0:
+                self._resample_velocity(velocity_ids)
 
-        self._advance_ee_goal(dt)
+        if self.cfg.refresh_ee_target:
+            self._advance_ee_goal(dt)
         self.gait_phase = torch.remainder(self.gait_phase + dt / self.cfg.gait_cycle_time, 1.0)
         self.gait_phase[~self.walking_mask] = 0.0
 
         if self._env.common_step_counter >= self.cfg.force_start_step:
-            self._update_pulse(
-                "ee_command",
-                dt,
-                self.cfg.ee_force_interval_range_s,
-                self.cfg.ee_force_duration_range_s,
-                self.cfg.ee_force_settling_time_s,
-                self.cfg.ee_force_range,
-                self.cfg.ee_force_active_probability,
-            )
-            self._update_pulse(
-                "ee_external",
-                dt,
-                self.cfg.ee_force_interval_range_s,
-                self.cfg.ee_force_duration_range_s,
-                self.cfg.ee_force_settling_time_s,
-                self.cfg.ee_force_range,
-                self.cfg.ee_force_active_probability,
-            )
-            self._update_pulse(
-                "base_command",
-                dt,
-                self.cfg.base_force_interval_range_s,
-                self.cfg.base_force_duration_range_s,
-                self.cfg.base_force_settling_time_s,
-                self.cfg.base_force_range,
-                self.cfg.base_force_active_probability,
-            )
+            if self.cfg.apply_ee_force_command:
+                self._update_pulse(
+                    "ee_command",
+                    dt,
+                    self.cfg.ee_force_interval_range_s,
+                    self.cfg.ee_force_duration_range_s,
+                    self.cfg.ee_force_settling_time_s,
+                    self.cfg.ee_force_range,
+                    self.cfg.ee_force_active_probability,
+                )
+            if self.cfg.apply_ee_external_force:
+                self._update_pulse(
+                    "ee_external",
+                    dt,
+                    self.cfg.ee_force_interval_range_s,
+                    self.cfg.ee_force_duration_range_s,
+                    self.cfg.ee_force_settling_time_s,
+                    self.cfg.ee_force_range,
+                    self.cfg.ee_force_active_probability,
+                )
+            if not self.cfg.mask_base_command:
+                self._update_pulse(
+                    "base_command",
+                    dt,
+                    self.cfg.base_force_interval_range_s,
+                    self.cfg.base_force_duration_range_s,
+                    self.cfg.base_force_settling_time_s,
+                    self.cfg.base_force_range,
+                    self.cfg.base_force_active_probability,
+                )
             if self.cfg.apply_base_external_force:
                 self._update_pulse(
                     "base_external",
@@ -414,6 +445,10 @@ class LiningUnifiedCommand(CommandTerm):
     def _resample_velocity(self, env_ids: torch.Tensor):
         count = len(env_ids)
         if count == 0:
+            return
+        if self.cfg.mask_base_command:
+            self.velocity_command_b[env_ids] = 0.0
+            self._velocity_time_left[env_ids] = self.cfg.velocity_resampling_time_range_s[1]
             return
         r = torch.empty(count, device=self.device)
         self.velocity_command_b[env_ids, 0] = r.uniform_(*self.cfg.lin_vel_x_range)
@@ -606,6 +641,7 @@ class LiningUnifiedCommandCfg(CommandTermCfg):
     ang_vel_z_range: tuple[float, float] = (-0.6, 0.6)
     velocity_resampling_time_range_s: tuple[float, float] = (5.0, 5.0)
     zero_velocity_probability: float = 0.3
+    mask_base_command: bool = False
     lin_vel_x_deadband: float = 0.1
     lin_vel_y_deadband: float = 0.1
     ang_vel_z_deadband: float = 0.2
@@ -625,6 +661,7 @@ class LiningUnifiedCommandCfg(CommandTermCfg):
     ee_delta_yaw_range: tuple[float, float] = (-0.5, 0.5)
     ee_trajectory_time_range_s: tuple[float, float] = (1.0, 3.0)
     ee_hold_time_range_s: tuple[float, float] = (0.5, 2.0)
+    refresh_ee_target: bool = True
     # Extra downward tool pitch relative to the target ray. UniFP uses 0.38 for Z1;
     # zero keeps the Kortex tool axis aligned with the ray from the shoulder.
     arm_induced_pitch: float = 0.0
@@ -646,6 +683,8 @@ class LiningUnifiedCommandCfg(CommandTermCfg):
     # shoulder keeps only ~15 Nm after gravity compensation at full reach.
     ee_force_range: tuple[float, float] = (-20.0, 20.0)
     ee_stiffness: float = 200.0
+    apply_ee_force_command: bool = True
+    apply_ee_external_force: bool = True
 
     base_force_interval_range_s: tuple[float, float] = (3.5, 9.0)
     base_force_duration_range_s: tuple[float, float] = (1.0, 3.0)

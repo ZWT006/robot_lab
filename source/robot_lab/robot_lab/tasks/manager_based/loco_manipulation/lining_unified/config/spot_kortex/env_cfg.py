@@ -500,6 +500,10 @@ class LiningUnifiedEnvCfg_PLAY(LiningUnifiedEnvCfg):
         self.observations.policy.frame.params["add_noise"] = False
         self.actions.joint_pos.motor_strength_range = (1.0, 1.0)
         self.commands.lining_unified.force_start_step = 0
+        # Play exposes only physical EE disturbances; virtual force commands would
+        # otherwise shift the compliant target independently of the three UI flags.
+        self.commands.lining_unified.apply_ee_force_command = False
+        self.commands.lining_unified.apply_base_external_force = False
         self.events.randomize_material = None
         self.events.randomize_base_mass = None
         self.events.randomize_payload_mass = None
