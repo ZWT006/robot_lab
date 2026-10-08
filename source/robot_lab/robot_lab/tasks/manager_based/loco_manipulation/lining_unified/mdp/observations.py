@@ -6,6 +6,7 @@
 Frame sizes follow the number of policy joints ``N`` (19 = 12 Spot legs + 7 Kortex
 arm joints): the actor frame is ``22 + 3N`` = 79-D and the critic frame is
 ``64 + 5N`` = 159-D, compared with 73-D and 149-D for UniFP's 17 B2 + Z1 joints.
+The EE-force-sensor actor appends a 3-D measured force, giving ``25 + 3N`` = 82-D.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from isaaclab.managers import ManagerTermBase, ObservationTermCfg, SceneEntityCf
 from isaaclab.sensors import ContactSensor
 
 from .commands import LiningUnifiedCommand
+from .ee_force_sensor import EEForceSensorCfg, EEForceSensorModel
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -71,12 +73,18 @@ class LiningUnifiedPolicyObservation(ManagerTermBase):
         joint_names: list[str],
         add_noise: bool,
     ) -> torch.Tensor:
+        observation = self._frame(env, command_name, action_name)
+        if add_noise:
+            observation = observation + torch.randn_like(observation) * self.noise_scale
+        return observation
+
+    def _frame(self, env: ManagerBasedRLEnv, command_name: str, action_name: str) -> torch.Tensor:
         command = _command(env, command_name)
         action_term = env.action_manager.get_term(action_name)
         roll, pitch, _ = math_utils.euler_xyz_from_quat(self.robot.data.root_link_quat_w)
         joint_pos, joint_vel = _policy_joint_state(self.robot, self.joint_ids)
         phase = 2.0 * torch.pi * command.gait_phase
-        observation = torch.cat(
+        return torch.cat(
             (
                 torch.stack((roll, pitch), dim=-1),
                 self.robot.data.root_link_ang_vel_b * 0.25,
@@ -89,9 +97,40 @@ class LiningUnifiedPolicyObservation(ManagerTermBase):
             ),
             dim=-1,
         )
-        if add_noise:
-            observation = observation + torch.randn_like(observation) * self.noise_scale
-        return observation
+
+
+class LiningUnifiedSensorPolicyObservation(LiningUnifiedPolicyObservation):
+    """Append the measured EE force (base yaw frame) to the actor frame (82-D for Spot + Kortex).
+
+    The sensor model applies its own noise, bias, delay, and filtering, so the
+    frame-level observation noise is zero on the force channels.
+    """
+
+    def __init__(self, cfg: ObservationTermCfg, env: ManagerBasedRLEnv):
+        super().__init__(cfg, env)
+        sensor_cfg: EEForceSensorCfg = cfg.params["sensor"]
+        self.sensor = EEForceSensorModel(sensor_cfg, _command(env, cfg.params["command_name"]), env)
+        self.force_scale = sensor_cfg.obs_scale
+        self.noise_scale = torch.cat((self.noise_scale, torch.zeros(3, device=self.device)))
+
+    def reset(self, env_ids: torch.Tensor | None = None):
+        self.sensor.reset(None if env_ids is None else torch.as_tensor(env_ids, device=self.device))
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        action_name: str,
+        asset_cfg: SceneEntityCfg,
+        joint_names: list[str],
+        add_noise: bool,
+        sensor: EEForceSensorCfg,
+    ) -> torch.Tensor:
+        return super().__call__(env, command_name, action_name, asset_cfg, joint_names, add_noise)
+
+    def _frame(self, env: ManagerBasedRLEnv, command_name: str, action_name: str) -> torch.Tensor:
+        frame = super()._frame(env, command_name, action_name)
+        return torch.cat((frame, self.sensor.compute() * self.force_scale), dim=-1)
 
 
 class LiningUnifiedCriticObservation(ManagerTermBase):

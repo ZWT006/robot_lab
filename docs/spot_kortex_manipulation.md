@@ -62,6 +62,25 @@ tensorboard --logdir logs/rsl_rl/lining_unified --port 6006
 ```bash
 python scripts/reinforcement_learning/rsl_rl/play.py \
   --task Lining-Unified-Play-v0 \
-  --num_envs 4 \
+  --num_envs 16 \
+  --device cpu
+```
+
+EE-force-sensor variant (5-frame history, no state estimator):
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py \
+  --task Lining-Unified-Sensor-v0 \
+  --headless
+```
+
+```bash
+tensorboard --logdir logs/rsl_rl/lining_unified_sensor --port 6006
+```
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/play.py \
+  --task Lining-Unified-Sensor-Play-v0 \
+  --num_envs 16 \
   --device cpu
 ```

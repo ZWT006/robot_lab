@@ -125,6 +125,9 @@ class LiningUnifiedCommand(CommandTerm):
                 "target": torch.zeros(self.num_envs, 3, device=self.device),
                 "current": torch.zeros(self.num_envs, 3, device=self.device),
             }
+        # The command updates before observations, so the pulse's current value is the
+        # force for the *next* physics steps. Sensors read the one that was just applied.
+        self._applied_ee_external_force_w = torch.zeros(self.num_envs, 3, device=self.device)
 
         self.metrics["ee_position_error"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["ee_orientation_error"] = torch.zeros(self.num_envs, device=self.device)
@@ -160,6 +163,11 @@ class LiningUnifiedCommand(CommandTerm):
     @property
     def base_external_force_w(self) -> torch.Tensor:
         return self._pulses["base_external"]["current"]
+
+    @property
+    def applied_ee_external_force_w(self) -> torch.Tensor:
+        """EE external force that acted during the last policy step (what a sensor measures)."""
+        return self._applied_ee_external_force_w
 
     @property
     def yaw_quat_w(self) -> torch.Tensor:
@@ -384,6 +392,7 @@ class LiningUnifiedCommand(CommandTerm):
 
     def _update_command(self):
         dt = self._env.step_dt
+        self._applied_ee_external_force_w.copy_(self.ee_external_force_w)
         if self.cfg.mask_base_command:
             self.velocity_command_b.zero_()
         else:

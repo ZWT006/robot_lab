@@ -509,3 +509,34 @@ class LiningUnifiedEnvCfg_PLAY(LiningUnifiedEnvCfg):
         self.events.randomize_payload_mass = None
         self.events.randomize_base_com = None
         self.events.push_robot = None
+
+
+def _use_ee_force_sensor(observations: ObservationsCfg, sensor_cfg: mdp.EEForceSensorCfg):
+    """Replace force estimation with a measured EE force and a short actor history.
+
+    The actor sees a 3-D Kortex-style EE force reading instead of inferring it from a
+    32-frame history, so five frames suffice and the state-estimation target is dropped.
+    """
+    frame = observations.policy.frame
+    frame.func = mdp.LiningUnifiedSensorPolicyObservation
+    frame.params["sensor"] = sensor_cfg
+    frame.history_length = 5
+    observations.state_estimation_target = None
+
+
+@configclass
+class LiningUnifiedSensorEnvCfg(LiningUnifiedEnvCfg):
+    """Training configuration with an EE force sensor instead of a force estimator."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _use_ee_force_sensor(self.observations, mdp.EEForceSensorCfg())
+
+
+@configclass
+class LiningUnifiedSensorEnvCfg_PLAY(LiningUnifiedEnvCfg_PLAY):
+    """Play configuration with the nominal (deployment) EE force sensor."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        _use_ee_force_sensor(self.observations, mdp.EE_FORCE_SENSOR_NOMINAL_CFG.replace(debug_vis=True))

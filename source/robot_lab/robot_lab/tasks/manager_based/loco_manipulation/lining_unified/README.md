@@ -39,6 +39,40 @@ python scripts/reinforcement_learning/rsl_rl/play.py \
 Force pulses start after `8000 * 24` policy steps during training and
 immediately in the play configuration.
 
+## Training modes
+
+| Task id | Actor input | EE force source | Runner |
+|---|---|---|---|
+| `Lining-Unified-v0` | 32 x 79 history | concurrent estimator (base vel, EE position, EE force, base force) | `LiningUnifiedRunner` |
+| `Lining-Unified-Sensor-v0` | 5 x 82 history | measured EE force, 3-D, base yaw frame | standard `OnPolicyRunner` |
+
+Both modes share the scene, command, reward, and critic (3 x 159). The sensor mode
+logs to `logs/rsl_rl/lining_unified_sensor` and has a matching
+`Lining-Unified-Sensor-Play-v0`.
+
+The sensor (`mdp/ee_force_sensor.py`) mimics Kortex `tool_external_wrench_force`:
+it reads the EE external force applied during the last policy step (not PhysX
+contact forces), expresses it in the tool frame, and per episode randomizes
+
+| Parameter | Training range | Play / deployment nominal |
+|---|---|---|
+| Bias | +/-1.5 N per axis | 0 |
+| White-noise std | 0-0.5 N | 0 |
+| Gain | 0.9-1.1 per axis | 1 |
+| Delay | 0-2 policy steps | 1 step |
+| First-order LPF cutoff (at 50 Hz) | 5-20 Hz | 10 Hz |
+
+The filtered force is rotated into the base yaw frame (also the frame of the EE
+force command) and scaled by 0.05. On hardware, filter the Kortex reading with
+the nominal 10 Hz IIR at the policy rate, then rotate it with arm FK and the IMU
+roll/pitch. The ranges come from the estimator they replace (checkpoint
+2026-10-06/model_43000): about 0.25 N high-frequency noise and a slowly varying
+error of about 1.2 N at zero force. The estimator's 0.55-0.6 gain shrinkage is a
+regression artifact and is not reproduced.
+
+Play draws the measured force as a green arrow at the EE next to the red
+applied-force arrow.
+
 In play mode, the **Scene Debug Visualization** panel provides independent
 checkboxes for the target-pose and force-arrow visibility as well as three
 runtime command controls:
